@@ -1,0 +1,30 @@
+---
+description: 同一组件多处外观不同时，由调用方传入字号颜色等样式值
+alwaysApply: true
+---
+
+# 组件的外观差异
+
+同一个组件在不同地方使用，内部字号、颜色、间距、圆角不同时，把这些值做成 props，由调用方传入。要改某一处的外观，只改该调用处传入的值。
+
+不要为每个使用场景加 `homeScale`、`cardScale`、`fluid` 这类布尔开关，再在组件内部用三元表达式选一套样式。调用方只能看到开关名，改样式还得进组件里查哪个分支生效。
+
+行为开关可以保留，例如空行是否隐藏。外观不要用行为开关顺便带出来。
+
+```html
+<!-- 创意卡要改痛点块，只改这里传入的样式。痛点徽标和价值徽标颜色不同，正文颜色也可以各写各的 -->
+<PainSolutionBlock
+	:pain-point="card.painPoint"
+	:value="card.solution"
+	root-class="bg-[#FAFFFB]"
+	row-class="items-center"
+	pain-label-class="text-xs text-[#B20000]"
+	value-label-class="text-xs text-[#00B227]"
+	pain-text-class="text-xs text-[#5C5C5C]"
+	value-text-class="text-xs text-[#5C5C5C]" />
+```
+
+```html
+<!-- 避免：样式藏在 PainSolutionBlock 的 home-scale 分支里 -->
+<PainSolutionBlock home-scale :pain-point="card.painPoint" :value="card.solution" />
+```

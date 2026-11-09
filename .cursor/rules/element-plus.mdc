@@ -1,0 +1,24 @@
+---
+description: 能用 Element Plus 组件就优先用，高定制再用 UnoCSS 或深度选择
+alwaysApply: true
+---
+
+# 组件
+
+能用 Element Plus 就用 Element Plus，不手写一套同等控件。按钮、输入、下拉、表格、弹窗、分页、标签、开关、日期等，用 `el-button`、`el-input`、`el-select`、`el-table`、`el-dialog` 这些组件。仓库里的库是 Element Plus，不是 Vue 2 的 Element UI。
+
+组件的 props 和插槽盖不住设计时，再用 UnoCSS 写在 `class` 上，或用 `:deep()` 改组件内部样式。`:deep()` 只用于压组件库内部结构，不用于页面布局。
+
+```html
+<el-button type="primary">保存</el-button>
+```
+
+```html
+<!-- 定制化程度高：UnoCSS 或深度选择 -->
+<el-input class="w-[240px]" />
+<style scoped>
+.panel :deep(.el-input__wrapper) {
+	border-radius: 8px;
+}
+</style>
+```

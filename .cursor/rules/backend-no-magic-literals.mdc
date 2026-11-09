@@ -1,0 +1,36 @@
+---
+description: 后端代码把静态数字和字符串抽到配置类或配置文件，避免魔法字面量
+alwaysApply: true
+---
+
+# 后端：不要写死数字和字符串
+
+本规则只在编写或修改后端代码时生效。前端 Vue / 页面文案、样式 class、组件 props 不要套用。
+
+后端业务代码里尽量不要出现含义不明的纯数字、纯字符串。固定值抽到配置类或配置文件，业务代码只引用常量名。
+
+常见要抽的：Redis TTL、key 前缀或固定片段、超时时间、重试次数、分页默认值、状态码映射、固定业务标识。
+
+可随运行环境变化的值放配置文件或环境变量；同一服务内固定不变的值放配置类常量。不要把临时计算出来的动态值硬抽成配置。
+
+```java
+// 配置类
+public final class RedisKeys {
+	public static final String SESSION_PREFIX = "session:";
+	public static final long SESSION_TTL_SECONDS = 1800;
+}
+```
+
+```java
+stringRedisTemplate.opsForValue().set(
+	RedisKeys.SESSION_PREFIX + userId,
+	payload,
+	RedisKeys.SESSION_TTL_SECONDS,
+	TimeUnit.SECONDS
+);
+```
+
+```java
+<!-- 避免：TTL、key 片段散落在业务代码里 -->
+stringRedisTemplate.opsForValue().set("session:" + userId, payload, 1800, TimeUnit.SECONDS);
+```

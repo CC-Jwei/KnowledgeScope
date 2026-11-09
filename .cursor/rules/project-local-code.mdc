@@ -1,0 +1,23 @@
+---
+description: 默认把逻辑写在当前项目文件夹，不写入公共 common
+alwaysApply: true
+---
+
+# 代码放在项目文件夹
+
+除非用户明确指定要改公共 `common`，否则不要往 `common` 里新增或修改任何逻辑。组件、工具函数、接口、状态、类型都写在正在做的那个项目文件夹下，例如 `creativeConcept`、`creativeConceptBackend`、`aiDesign`。
+
+用户只说「抽成公共方法」「放到 common」这类话时，才改 `common`。
+
+**例外（创意概念库）**：`creativeConcept`（含内嵌 `manage`）与 `creativeConceptBackend` 之间确认相同的实现，抽到 `creativeConceptShared/`，用 `@ccShared` 引用。不要为此改 `common`。
+
+```text
+creativeConcept/utils/shared/format.ts
+creativeConceptBackend/utils/shared/format.ts
+creativeConceptShared/utils/shared/format.ts
+```
+
+```text
+<!-- 避免：用户没指定时写进公共目录 -->
+common/utils/format.ts
+```

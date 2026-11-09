@@ -1,0 +1,27 @@
+---
+description: 容器优先用 div，避免 span 包元素或组件
+alwaysApply: true
+---
+
+# 优先用 div
+
+模板里的容器、可点击区域、包图标或组件的节点，用 `div`。`span` 是行内元素，里面再放元素或组件时，行内容器会包住块级内容，布局和对齐容易出问题。
+
+纯文字片段、不包其他节点时，也可以用 `div`。
+
+正在改的模板按这条写。不要为了替换 `span` 去扫整仓。
+
+```html
+<div class="flex items-center gap-[8px]">
+	<SomeIcon />
+	<div>标题</div>
+</div>
+```
+
+```html
+<!-- 避免：span 里再放元素或组件 -->
+<span class="flex items-center gap-[8px]">
+	<SomeIcon />
+	<span>标题</span>
+</span>
+```

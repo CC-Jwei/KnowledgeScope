@@ -1,0 +1,12 @@
+---
+description: 页面样式尽量使用 UnoCSS 原子类
+alwaysApply: true
+---
+
+# 页面样式
+
+页面样式用 UnoCSS 原子类写在模板的 `class` 上。不新增手写 CSS 做布局，也不用行内 `style` 排版。
+
+尺寸、颜色、间距写在 class 的任意值里，例如 `w-[320px]`、`gap-[16px]`、`text-[#5C5C5C]`。
+
+已有的 `scrollbar-hide` 继续用，不要另写滚动条样式。

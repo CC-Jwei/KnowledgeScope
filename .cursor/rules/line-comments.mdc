@@ -1,0 +1,27 @@
+---
+description: TypeScript / Python 的方法和变量写行级注释，说明有什么用、用在哪
+globs: "**/*.{ts,tsx,vue,py}"
+alwaysApply: false
+---
+
+# 行级注释（TypeScript / Python）
+
+`.ts`、`.tsx`、Vue 的 `<script lang="ts">`，以及 `.py` 里的每个函数、方法和变量，都要在声明上一行写行级注释。格式固定为：有什么用，用在哪。先写用途，再写使用位置（页面、组件、模块或调用方）。
+
+TypeScript / Vue 用 `//`，Python 用 `#`。`import`、类型别名、接口、以及 Python 的 `TypedDict` / `Protocol` / `TypeAlias` 等纯类型声明不用这种注释。
+
+```ts
+// 把时间戳格式化成 YYYY-MM-DD，用在专利监控列表的更新时间列
+function formatUpdatedAt(ts: number): string {
+
+// 当前选中的概念 id，用在概念详情页的保存请求和列表高亮
+const selectedConceptId = ref<string | null>(null)
+```
+
+```python
+# 按来源 id 拉取事件列表，用在 sources 路由的详情接口
+def list_events_by_source(source_id: str) -> list[Event]:
+
+# 当前会话的数据库连接，用在请求生命周期内的仓储读写
+db = SessionLocal()
+```

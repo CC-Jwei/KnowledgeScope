@@ -1,0 +1,18 @@
+---
+alwaysApply: true
+---
+# 类型检查
+
+完成本轮代码修改后，若解决超过3个以上的需求，则进行类型检查，只检查本轮改过的 `.vue`、`.ts`、`.tsx`。不要执行 `pnpm type-check`，也不要跑 `vue-tsc --build`。那条命令会按 `tsconfig.app.json` 把所有子项目都查一遍。
+
+工作区里已有、但不是本轮改的文件，不要拿去检查，也不要顺手改那里的类型报错。本轮没有改上述文件时，跳过类型检查。
+
+把本轮改过的文件路径传给 `vue-tsc`。`env.d.ts` 只为带上 `*.vue` 声明，不算业务代码。
+
+```cmd
+cmd.exe /c "pnpm exec vue-tsc --noEmit --pretty false --strict --module esnext --moduleResolution bundler --target ESNext --jsx preserve --jsxImportSource vue --skipLibCheck env.d.ts 本轮改过的文件"
+```
+
+多个文件用空格隔开。报错只改本轮改过的文件，改完对这同一批文件再跑一遍，通过后再结束。
+
+不要打开内置浏览器查看页面，也不要用浏览器工具点击、截图或核对界面。

@@ -1,0 +1,30 @@
+{
+  "name": "@knowledgescope/front",
+  "version": "0.1.0",
+  "private": true,
+  "description": "知域 KnowledgeScope 前端（Vue 3 + Element Plus + UnoCSS）",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.1",
+    "element-plus": "^2.10.7",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "typescript": "~5.6.3",
+    "unocss": "^0.65.1",
+    "vite": "^5.4.11",
+    "vue-tsc": "^2.1.10"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

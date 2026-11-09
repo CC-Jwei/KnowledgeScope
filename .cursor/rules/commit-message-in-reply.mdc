@@ -1,0 +1,24 @@
+---
+description: 改完代码后，回复里附上可直接用作 git commit 的精确描述
+alwaysApply: true
+---
+
+# 回复中附带 commit 描述
+
+本轮只要改动了代码或配置文件，回答末尾附上一句或多句可直接写进 `git commit` 的描述。本轮没有改文件时，不要硬写。
+
+写清「改了什么、为什么」，对准本轮实际 diff，不要空泛概括。不要主动执行 `git commit`，除非用户明确要求提交。
+
+仓库约定用 conventional commits（`feat`、`fix`、`chore`、`docs`、`refactor`、`test`）。多句时第一句是标题，后面补细节。
+
+```text
+fix(creativeConcept): 详情页封面轮播在无图时隐藏指示点
+
+无图时指示点仍占位，导致空白区域；改为仅在有多张封面时渲染。
+```
+
+```text
+<!-- 避免：空泛、对不上本轮改动 -->
+update some files
+修复若干问题
+```

@@ -1,0 +1,14 @@
+---
+description: 页面可点击元素若无自带 hover，用 UnoCSS 补上
+alwaysApply: true
+---
+
+# 可点击元素的 hover
+
+页面上每个可点击元素都要有 hover 反馈。包括 `button`、`a`、带 `@click` 的元素，以及 `cursor-pointer` 的区域。
+
+组件库控件若自带 hover（如 Element Plus 的 `el-button`、`el-link`），保持原样。其余元素用 UnoCSS 的 `hover:` 写在 `class` 上，并加上 `cursor-pointer` 和 `transition-colors`，让背景、文字颜色或透明度在悬停时发生变化。
+
+```html
+<button class="cursor-pointer transition-colors hover:opacity-80" @click="save">保存</button>
+```
