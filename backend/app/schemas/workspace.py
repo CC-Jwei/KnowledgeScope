@@ -94,6 +94,8 @@ class WorkspaceUpdate(CamelModel):
 class Workspace(CamelModel):
     # 空间 id，用在列表/详情响应与路径参数
     id: str
+    # 所有者用户 id，用在前端归属展示
+    owner_id: str
     # 空间名称，用在列表与详情展示
     name: str
     # 空间描述，用在详情展示

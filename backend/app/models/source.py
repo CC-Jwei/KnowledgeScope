@@ -2,7 +2,7 @@
 
 from datetime import datetime, timezone
 
-from sqlalchemy import ForeignKey, String, Text
+from sqlalchemy import ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -28,7 +28,9 @@ class SourceRecord(Base):
         nullable=False,
         index=True,
     )
-    # 来源类型字符串，用在 MVP 固定 plain_text
+    # 所有者冗余，用在向量 metadata 与级联清理
+    owner_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    # 来源类型字符串，用在入库规范化分支
     type: Mapped[str] = mapped_column(
         String(32),
         nullable=False,
@@ -36,14 +38,21 @@ class SourceRecord(Base):
     )
     # 展示标题，用在列表与详情
     title: Mapped[str] = mapped_column(String(200), nullable=False)
-    # 处理状态，用在 MVP 恒为 ready
+    # 处理状态，用在轮询与检索过滤
     status: Mapped[str] = mapped_column(
         String(32),
         nullable=False,
-        default=SourceStatus.READY.value,
+        default=SourceStatus.PENDING.value,
+        index=True,
     )
-    # 纯文字全文，用在详情接口与预览截断
-    content: Mapped[str] = mapped_column(Text, nullable=False)
+    # 规范化后正文，用在分块；web_page 抓取前可为空串
+    content: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    # 网页原始 URL，用在 web_page 类型
+    source_url: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    # 失败原因，用在 status=failed 时展示
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # 入库已尝试次数，用在 worker 重试上限
+    ingest_attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     # 创建时间，用在列表排序与 API createdAt
     created_at: Mapped[datetime] = mapped_column(
         UTCDateTime,
@@ -60,3 +69,10 @@ class SourceRecord(Base):
 
     # 所属空间关系，用在 ORM 反向导航
     workspace = relationship("WorkspaceRecord", back_populates="sources")
+    # 级联分块，用在删除来源时清理业务库 Chunk
+    chunks = relationship(
+        "ChunkRecord",
+        back_populates="source",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )

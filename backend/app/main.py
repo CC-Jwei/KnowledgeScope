@@ -9,15 +9,21 @@ from fastapi.openapi.utils import get_openapi
 
 from app.api.router import api_router
 from app.config import get_settings
+from app.constants import HTTP_BEARER_SCHEME_NAME
 from app.database import init_db
 from app.schemas.events import ConnectedEvent, HeartbeatEvent
+from app.services.ingest_worker import start_ingest_worker, stop_ingest_worker
 
 
 @asynccontextmanager
-# 应用生命周期钩子：启动建表，用在 FastAPI lifespan
+# 应用生命周期：建表、启动入库 worker，用在 FastAPI lifespan
 async def lifespan(_app: FastAPI):
     init_db()
-    yield
+    start_ingest_worker()
+    try:
+        yield
+    finally:
+        await stop_ingest_worker()
 
 
 # 把 Pydantic 模型写入 OpenAPI components.schemas，用在暴露 SSE 事件契约
@@ -34,7 +40,7 @@ def _merge_model_schema(components_schemas: dict[str, Any], model: type) -> None
     components_schemas[model.__name__] = schema
 
 
-# 组装 FastAPI 应用（CORS、路由、OpenAPI），用在模块导出与 uvicorn 启动
+# 组装 FastAPI 应用（CORS、路由、OpenAPI、Bearer），用在 uvicorn 启动
 def create_app() -> FastAPI:
     # 运行时配置，用在应用标题、前缀与 CORS
     settings = get_settings()
@@ -43,9 +49,10 @@ def create_app() -> FastAPI:
         title=settings.app_name,
         version=settings.app_version,
         description=(
-            "知域 KnowledgeScope MVP API。"
+            "知域 KnowledgeScope API（Phase 2）。"
             "契约以本服务 Pydantic 模型为真相源；"
-            "请使用 /docs 或 /openapi.json 供前端生成类型。"
+            "除 /auth/register、/auth/login、/health 外需 Bearer Token。"
+            "SSE 亦可用查询参数 access_token。"
         ),
         lifespan=lifespan,
     )
@@ -63,24 +70,31 @@ def create_app() -> FastAPI:
     def health() -> dict[str, str]:
         return {"status": "ok"}
 
-    # 自定义 OpenAPI：附带 SSE 事件 schema，用在 /openapi.json 与 /docs
+    # 自定义 OpenAPI：Bearer + SSE 事件 schema，用在 /openapi.json 与 /docs
     def custom_openapi() -> dict[str, Any]:
         if application.openapi_schema:
             return application.openapi_schema
-        # 基础 OpenAPI 文档，用在继续挂入 Connected/Heartbeat schema
+        # 基础 OpenAPI 文档，用在继续挂入 security 与事件 schema
         openapi_schema = get_openapi(
             title=application.title,
             version=application.version,
             description=application.description,
             routes=application.routes,
         )
-        # components 节点，用在写入 schemas
+        # components 节点，用在写入 schemas / securitySchemes
         components = openapi_schema.setdefault("components", {})
         # schemas 字典，用在前端 codegen 读取模型
         schemas = components.setdefault("schemas", {})
-        # SSE 事件 data 不走 response_model，需显式挂入契约
         _merge_model_schema(schemas, ConnectedEvent)
         _merge_model_schema(schemas, HeartbeatEvent)
+        # Bearer 安全方案，用在 Swagger Authorize
+        components.setdefault("securitySchemes", {})[HTTP_BEARER_SCHEME_NAME] = {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
+            "description": "登录后获得的 accessToken；SSE 也可用 ?access_token=",
+        }
+        openapi_schema["security"] = [{HTTP_BEARER_SCHEME_NAME: []}]
         application.openapi_schema = openapi_schema
         return application.openapi_schema
 

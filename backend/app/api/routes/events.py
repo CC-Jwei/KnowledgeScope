@@ -1,13 +1,15 @@
-"""SSE 心跳事件。"""
+"""SSE 心跳事件（需登录；支持 query access_token）。"""
 
 import asyncio
 from collections.abc import AsyncIterator
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 
+from app.api.deps import get_current_user_sse
 from app.config import get_settings
+from app.models.user import UserRecord
 from app.schemas.events import ConnectedEvent, HeartbeatEvent
 
 # SSE 事件子路由，用在 api_router 挂载 /events
@@ -62,7 +64,7 @@ async def _heartbeat_generator(request: Request) -> AsyncIterator[str]:
 
 @router.get(
     "/heartbeat",
-    summary="SSE 心跳流",
+    summary="SSE 心跳流（需登录）",
     responses={
         200: {
             "description": "Server-Sent Events 流（connected + 周期性 heartbeat）",
@@ -82,7 +84,10 @@ async def _heartbeat_generator(request: Request) -> AsyncIterator[str]:
     },
 )
 # 对外 SSE 心跳接口，用在前端顶栏连接状态展示
-async def heartbeat_stream(request: Request) -> StreamingResponse:
+async def heartbeat_stream(
+    request: Request,
+    _current_user: UserRecord = Depends(get_current_user_sse),
+) -> StreamingResponse:
     return StreamingResponse(
         _heartbeat_generator(request),
         media_type=SSE_CONTENT_TYPE,

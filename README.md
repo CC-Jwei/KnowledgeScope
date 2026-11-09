@@ -94,16 +94,18 @@ npm.cmd run dev
 
 | 文档 | 内容 |
 |------|------|
+| [`CONTEXT.md`](CONTEXT.md) | 领域术语（知识空间、来源、严格边界等） |
 | [`docs/项目初步预想.md`](docs/项目初步预想.md) | 产品定位、知识空间模型、多源与 Agent 路线 |
-| [`docs/MVP业务说明.md`](docs/MVP业务说明.md) | 第一期范围、领域模型与验收要点 |
+| [`docs/MVP业务说明.md`](docs/MVP业务说明.md) | Phase 1 基线：空间 / plain_text / SSE |
+| [`docs/初期基本功能开发说明.md`](docs/初期基本功能开发说明.md) | Phase 2：多用户、RAG、多 SourceType、数据模型 |
+| [`docs/配置说明.md`](docs/配置说明.md) | 配置键与默认值（禁止业务魔法字面量） |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | 本地开发与贡献约定 |
 
 ## 路线图（摘录）
 
 1. **MVP（当前）**：知识空间 + 纯文字来源 + SSE
-2. **多源管道**：网页 / Markdown / Office / 图片 / 视频链接解析与归一化
-3. **本地 RAG**：分块、Embedding、边界检索与引用溯源
-4. **多 Agent**：规划 / 检索 / 分析 / 核验协作工作流
+2. **Phase 2a–2c**：用户隔离 → plain_text RAG → markdown / web_page（见初期开发说明）
+3. **后续**：更多 SourceType、Redis/Go 演进、多 Agent 协作工作流
 
 ## 开源许可
 
