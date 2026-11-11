@@ -1,28 +1,29 @@
-# 知域 KnowledgeScope — 前端（MVP）
+# 知域 KnowledgeScope — 前端（Phase 2）
 
-Vue 3 + TypeScript + Element Plus + UnoCSS。本目录消费 [`shared/`](../shared/) 导出的类型与路径常量，**不手写**与后端平行的 Workspace / Source DTO。
+Vue 3 + TypeScript + Element Plus + UnoCSS。本目录消费 [`shared/`](../shared/) 导出的类型与路径常量，**不手写**与后端平行的 DTO。
 
-对应业务范围见 [`docs/MVP业务说明.md`](../docs/MVP业务说明.md)。
+范围见 [`docs/初期基本功能开发说明.md`](../docs/初期基本功能开发说明.md) 与 [`docs/配置说明.md`](../docs/配置说明.md)。
 
-## 功能范围（MVP）
+## 功能范围
 
 | 能力 | 说明 |
 |------|------|
-| 知识空间列表 | 创建、打开、删除（确认框）；展示名称、描述、来源数、时间 |
-| 知识空间详情 | 查看/编辑名称与描述；删除空间 |
-| 纯文字来源 | 投递、列表、抽屉详情（含全文）、编辑、删除 |
-| SSE 心跳 | 顶栏展示：连接中 / 已连接（最近心跳时间） / 断开（可重连） |
+| 登录 / 注册 | 手机号 + 密码；JWT 存 `localStorage`；未登录跳 `/login` |
+| 知识空间 | 仅当前用户；列表/创建/编辑/删除（级联提示） |
+| 来源投递 | `plain_text` / `markdown` / `web_page`；创建后 `pending` |
+| 入库状态 | 列表轮询 `pending` / `processing` / `ready` / `failed`；抽屉含 `errorMessage` / `sourceUrl` |
+| 会话问答 | 空间下新建/删除会话；严格边界提问；助手消息展示 Citation |
+| 模型设置 | 系统默认标注「默认」；个人档 CRUD；API Key 只写脱敏 |
+| SSE 心跳 | 登录后 `ApiPaths.heartbeat(accessToken)`；顶栏连接态 |
 
-本期不做：多 SourceType、RAG、多 Agent、登录权限、WebSocket。
+本期不做：成员协作、多 Agent、非严格回答模式、短信登录。
 
 ## 环境准备
 
-需要 Node.js ≥ 20。并先按以下文档准备好后端与契约层：
+需要 Node.js ≥ 20。
 
-1. [`backend/README.md`](../backend/README.md) — 创建 `.venv` 并启动 FastAPI（默认 `8000`）
-2. [`shared/README.md`](../shared/README.md) — 契约已生成（或执行 `npm run generate`）
-
-在 `front/` 安装依赖（PowerShell）：
+1. 按 [`backend/README.md`](../backend/README.md) 启动 FastAPI（默认 `8000`）。
+2. 按 [`shared/README.md`](../shared/README.md) 确认契约已生成。
 
 ```powershell
 cd front
@@ -45,115 +46,73 @@ cd front
 npm.cmd run dev
 ```
 
-浏览器打开：`http://127.0.0.1:5173`
+打开：`http://127.0.0.1:5173`
 
-开发态默认通过 Vite 代理转发 `/api`、`/health` 到 `http://127.0.0.1:8000`（见 `vite.config.ts` / `.env.development`），因此：
-
-- REST 与 SSE 都走同源相对路径，避免浏览器 CORS / EventSource 跨域问题
-- 前端代码使用 `@knowledgescope/shared` 的 `ApiPaths`，路径与 backend 保持一致
+开发态 `/api`、`/health` 由 Vite 代理到后端（见 `vite.config.ts`）。REST 与 SSE 同源，EventSource 通过 `?access_token=` 鉴权。
 
 ## 配置
 
 | 变量 | 默认 | 说明 |
 |------|------|------|
-| `VITE_API_BASE_URL` | 空 | API 基址；开发留空走代理；直连可写 `http://127.0.0.1:8000` |
-| `VITE_PROXY_TARGET` | `http://127.0.0.1:8000` | 仅 Vite dev server 代理目标 |
+| `VITE_API_BASE_URL` | 空 | 开发留空走代理；直连可写 `http://127.0.0.1:8000` |
+| `VITE_PROXY_TARGET` | `http://127.0.0.1:8000` | 仅 dev server 代理目标 |
 
-可复制 `.env.example` 为本地覆盖文件（勿提交密钥类内容）。
+JWT 密钥、默认模型、向量库等**只配在 backend**，不要写进 front/shared。
 
-## 契约使用约定
+## 契约使用
 
 ```text
-backend Pydantic
-  → /openapi.json
-  → shared npm run generate
-  → front 引用 @knowledgescope/shared
+backend Pydantic → OpenAPI → shared generate → front @knowledgescope/shared
 ```
-
-### 推荐 import
 
 ```ts
 import type {
-  Workspace,
-  WorkspaceCreate,
-  Source,
-  SourceListItem,
-  PlainTextSourceCreate,
+  SourceCreateInput,
+  AskMessageRequest,
+  ModelProfile,
 } from '@knowledgescope/shared'
-
-import { ApiPaths, SseEventName, MVP_SOURCE_TYPE } from '@knowledgescope/shared'
+import { ApiPaths, SourceTypeValue, SourceStatusValue } from '@knowledgescope/shared'
 ```
 
-Vite / TS 已配置别名：
+别名：`'@knowledgescope/shared' → ../shared/src/index.ts`
 
-```ts
-'@knowledgescope/shared' → ../shared/src/index.ts
-```
+改字段：改 backend → `shared` 执行 `npm run generate` → 改 front 调用处。
 
-**禁止**在 `front/src` 再定义一份与 OpenAPI 冲突的 `interface Workspace` / `interface Source`。
+## 页面路由
 
-改字段流程：
-
-1. 改 `backend/app/schemas/`
-2. 在 `shared/` 执行 `npm.cmd run generate`
-3. 改本目录调用处
+| 路由 | 页面 |
+|------|------|
+| `/login` | 登录 / 注册 |
+| `/` | 知识空间列表 |
+| `/workspaces/:workspaceId` | 空间详情 + 来源投递/轮询 |
+| `/workspaces/:workspaceId/chat` | 会话与严格问答 |
+| `/model-profiles` | 模型设置 |
 
 ## 目录结构
 
 ```text
-front/
-  src/
-    api/                 # REST 封装（workspaces / sources / http）
-    components/          # 表单对话框、来源抽屉、SSE 徽标
-    composables/         # useSseHeartbeat
-    constants/           # 展示用常量（非 DTO）
-    layouts/             # 顶栏布局
-    router/              # 空间列表 / 详情路由
-    utils/               # 时间与错误文案
-    views/               # 页面
-  .env.development
-  .env.example
-  vite.config.ts
-  uno.config.ts
-  README.md
+front/src/
+  api/           # http + workspaces/sources/conversations/modelProfiles
+  stores/        # auth（Token + 当前用户）
+  router/        # 路由与登录守卫
+  views/         # 登录、列表、详情、会话、模型设置
+  components/    # 投递表单、抽屉、对话框、SSE 徽标
+  composables/   # useSseHeartbeat（带 Token）
+  utils/         # 时间、错误、来源状态展示
 ```
-
-## 页面与路由
-
-| 路由 | 页面 | 说明 |
-|------|------|------|
-| `/` | 知识空间列表 | F1 + 删除确认 |
-| `/workspaces/:workspaceId` | 空间详情 | F2 投递/列表/抽屉；编辑空间 |
-
-顶栏全局展示 SSE 连接状态（F3）。
 
 ## 常用命令
 
 ```powershell
-cd front
-npm.cmd run dev        # 开发服务器
-npm.cmd run build      # 类型检查 + 生产构建
-npm.cmd run typecheck  # 仅 vue-tsc
-npm.cmd run preview    # 预览构建产物
+npm.cmd run dev        # 开发
+npm.cmd run typecheck  # vue-tsc
+npm.cmd run build      # 类型检查 + 构建
+npm.cmd run preview    # 预览构建
 ```
 
-## 验收对照（前端部分）
+## 验收对照
 
-对应业务文档里程碑 **M4 / 7.1**：
-
-1. 可创建至少 2 个知识空间，列表可见且互不干扰。
-2. 在空间 A 投递纯文字后，仅 A 的来源数增加。
-3. 来源抽屉可见全文；列表可见标题与 `contentPreview`。
-4. 删除来源后计数减少；删除空间后回到列表且无法再打开其来源。
-5. 顶栏 SSE 在连接后变为「已连接」，并能看到最近心跳时间更新（约每 15 秒）。
-
-## 常见问题
-
-**Q: 页面提示请求失败 / SSE 一直断开？**  
-A: 先确认 backend 已在 `8000` 端口运行；再确认未把 `VITE_API_BASE_URL` 指到错误地址。
-
-**Q: 类型报错找不到 `@knowledgescope/shared`？**  
-A: 确认仓库内存在 `shared/src/index.ts`；本前端通过 Vite/TS 路径别名引用，无需把 shared 发布到 npm。
-
-**Q: 后端改了字段前端没跟上？**  
-A: 在 `shared/` 重新 `npm run generate`，再按新类型改 `front` 调用处。
+1. 注册/登录后获得 Token；未登录访问业务页会跳登录。
+2. 用户只能看到自己空间；来源创建后状态经轮询变为 ready/failed。
+3. 会话可提问；无证据时展示后端固定文案；有证据时展示引用标题/片段。
+4. 模型设置可增删改个人档，系统默认不可改删；Key 不回显明文。

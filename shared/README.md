@@ -1,43 +1,61 @@
 # 知域 KnowledgeScope — shared（契约层）
 
-本目录是前后端之间的 **TypeScript 契约消费层**，不是第二份手写 DTO。
+本目录是前后端之间的 **TypeScript 契约消费层**，不是第二份手写 DTO，也不是另一个独立后端。
 
-对应业务范围见 [`docs/MVP业务说明.md`](../docs/MVP业务说明.md)。  
-领域模型与 API 的**唯一真相源**在 [`backend/`](../backend/)（Pydantic → FastAPI OpenAPI）。
+领域模型与 API 的**唯一真相源**在 [`backend/`](../backend/)：`Pydantic → FastAPI OpenAPI → shared TypeScript → front`。
+
+## 文档与范围
+
+| 文档 | 与本目录的关系 |
+|------|----------------|
+| [`docs/初期基本功能开发说明.md`](../docs/初期基本功能开发说明.md) | 当前 Phase 2a / 2b / 2c 的 API、数据模型与验收范围 |
+| [`docs/配置说明.md`](../docs/配置说明.md) | 后端阈值、模型、向量库等配置；**不在 shared 复制这些环境变量** |
+| [`docs/MVP业务说明.md`](../docs/MVP业务说明.md) | Phase 1 基线；已被 Phase 2 契约替换的部分以最新 OpenAPI 为准 |
+| [`backend/README.md`](../backend/README.md) | 后端启动、鉴权、入库与问答实现说明 |
+
+当前生成契约覆盖：
+
+- **2a**：手机号注册/登录、JWT、当前用户、Workspace `ownerId` 隔离
+- **2b**：异步入库状态、Conversation / Message / Citation、严格边界问答、ModelProfile
+- **2c**：`plain_text` / `markdown` / `web_page` 三种来源创建
+- **SSE**：登录后的 `connected` + `heartbeat`；EventSource 可通过 `?access_token=` 传令牌
 
 ## 定位（方案 A）
 
 ```text
-backend Pydantic 模型
-    → FastAPI /openapi.json
-    → shared 生成脚本（openapi-typescript）
-    → shared/generated + src 类型别名
-    → front 只引用 shared，禁止再手写平行 Workspace/Source 接口
+backend/app/schemas/（Pydantic）
+    → backend app.openapi()
+    → shared/openapi/openapi.json
+    → openapi-typescript
+    → shared/generated/openapi.ts
+    → shared/src/schema.ts 类型别名 + src/index.ts 导出
+    → front 引用 @knowledgescope/shared
 ```
 
 | 可以放这里 | 不要放这里 |
 |------------|------------|
 | OpenAPI 快照与生成脚本 | 手写与后端字段平行的 DTO |
-| 生成的 TS 类型 / 友好别名 | 爬虫、RAG、Agent 等业务逻辑 |
+| 生成类型的友好别名 | 爬虫、分块、向量库、问答编排等业务逻辑 |
 | API 路径、SSE 事件名等客户端常量 | Vue 组件、页面、样式 |
-| 给 front 用的路径拼装工具 | 第二套「真相源」枚举/模型 |
+| 为前端收窄的条件必填输入类型 | JWT 密钥、模型 Key、Chroma 路径等后端配置 |
+| 固定的严格模式文案等协议约定 | 另一套可独立修改的领域模型 |
 
-改字段：**只改 backend 模型 → 在本目录重新 `npm run generate` → 再改 front 调用处。**
+**改字段流程：只改 backend Pydantic → 在本目录 `npm run generate` → 再改 front 调用处。**
 
 ## 目录结构
 
 ```text
 shared/
   openapi/
-    openapi.json       # 从 backend 导出的 OpenAPI 快照（可提交）
+    openapi.json       # 从 backend 导出的 OpenAPI 快照
   generated/
-    openapi.ts         # openapi-typescript 产物（可提交，勿手改）
+    openapi.ts         # openapi-typescript 产物，勿手改
     README.md
   src/
-    index.ts           # 对外入口
-    schema.ts          # 从 generated 抽出的类型别名
-    constants.ts       # API 前缀、SSE 事件名等
-    paths.ts           # REST/SSE 路径拼装
+    index.ts           # 对外入口：类型、常量、ApiPaths
+    schema.ts          # 从 generated 投影的类型别名与表单输入收窄
+    constants.ts       # 枚举字面量、SSE 名称、严格模式约定
+    paths.ts           # REST / SSE 路径拼装
   scripts/
     dump-openapi.mjs   # 导出 OpenAPI JSON
     generate.mjs       # dump + 生成 TS
@@ -46,159 +64,284 @@ shared/
   README.md
 ```
 
-## 环境准备
+## 环境与生成
 
-需要 Node.js ≥ 20。在 `shared/` 安装依赖：
+需要 Node.js ≥ 20。先安装依赖：
 
 ```powershell
 cd shared
 npm.cmd install
 ```
 
-生成脚本默认通过 **`backend/.venv`** 直接 `import app` 导出 OpenAPI，**不必先启动 uvicorn**。  
-请确保已按 [`backend/README.md`](../backend/README.md) 创建虚拟环境并安装依赖。
-
-## 生成类型
-
-在 `shared/` 执行：
+再生成契约：
 
 ```powershell
-cd shared
 npm.cmd run generate
+npm.cmd run typecheck
 ```
 
-等价于：
+`generate` 默认调用 `backend/.venv` 中的 Python，直接执行 `app.openapi()` 导出契约，**无需先启动 uvicorn**。因此先生成类型、再启动后端也可以。
 
-1. `dump:openapi` — 写出 `openapi/openapi.json`
-2. `openapi-typescript` — 写出 `generated/openapi.ts`
+前提是已按 [`backend/README.md`](../backend/README.md) 创建 `backend/.venv` 并安装依赖。导出契约不会替后端设置生产配置，也不会启动入库 worker。
 
-### 可选：从已启动的后端拉取
+### 从运行中的服务拉取
 
 ```powershell
 # 默认 http://127.0.0.1:8000/openapi.json
 npm.cmd run generate:from-url
 
-# 或自定义地址
+# 或指定其他地址
 $env:OPENAPI_URL = "http://127.0.0.1:8000/openapi.json"
 node .\scripts\generate.mjs --from-url --url http://127.0.0.1:8000/openapi.json
 ```
 
-### 仅导出 OpenAPI 快照
+仅更新 JSON 快照、不生成 TS 时：
 
 ```powershell
 npm.cmd run dump:openapi
 ```
 
-## 前端如何使用
+## 前端引用
 
-`front` 尚未接入时，可先按下列方式准备（任选其一）。
-
-### 方式 1：Vite / TS 路径别名
+当前 `front` 可通过 Vite / TS 路径别名使用：
 
 ```ts
-// vite.config 示例
-resolve: {
-  alias: {
-    '@knowledgescope/shared': path.resolve(__dirname, '../shared/src/index.ts'),
-  },
-}
+'@knowledgescope/shared' → ../shared/src/index.ts
 ```
 
-### 方式 2：workspace 依赖
+若改用 workspace 依赖，包名为 `@knowledgescope/shared`，入口是 `src/index.ts`。
 
-```json
-{
-  "dependencies": {
-    "@knowledgescope/shared": "workspace:*"
-  }
-}
-```
-
-### 推荐 import
+### 1. 认证与请求头
 
 ```ts
 import type {
+  LoginRequest,
+  TokenResponse,
+  UserPublic,
   Workspace,
-  WorkspaceCreate,
-  Source,
-  SourceListItem,
-  PlainTextSourceCreate,
-  HeartbeatEvent,
-  ConnectedEvent,
 } from '@knowledgescope/shared'
+import { ApiPaths } from '@knowledgescope/shared'
 
-import {
-  ApiPaths,
-  SseEventName,
-  API_V1_PREFIX,
-  MVP_SOURCE_TYPE,
-} from '@knowledgescope/shared'
-
-const url = ApiPaths.workspaces()
-const sseUrl = ApiPaths.heartbeat()
-
-if (eventName === SseEventName.Heartbeat) {
-  // data 类型为 HeartbeatEvent
+const loginBody: LoginRequest = {
+  phone: '13800138000',
+  password: 'secret12',
 }
+
+// POST ApiPaths.authLogin()，成功响应为 TokenResponse。
+// 后续 REST 请求带 Authorization: Bearer <accessToken>。
+// GET ApiPaths.authMe() 返回 UserPublic；Workspace 含 ownerId。
 ```
 
-需要完整 OpenAPI `paths` / `operations`（例如配合 openapi-fetch）时：
+除 `POST /auth/register`、`POST /auth/login`、`GET /health` 外，当前业务接口均需 Bearer Token。越权或资源不存在统一返回 `404`。
+
+### 2. 三种来源投递
+
+OpenAPI 的 `SourceCreate` 对 `content` / `url` 使用可选字段，因为 Pydantic 在模型校验器中按 `type` 判断条件必填。shared 额外提供**不改动运行时**的类型收窄，帮助表单在编译期传对字段：
 
 ```ts
-import type { paths, operations } from '@knowledgescope/shared'
-// 或
-import type { paths } from '@knowledgescope/shared/generated/openapi'
+import type {
+  PlainTextSourceCreate,
+  MarkdownSourceCreate,
+  WebPageSourceCreate,
+  SourceCreateInput,
+} from '@knowledgescope/shared'
+import { SourceTypeValue } from '@knowledgescope/shared'
+
+const text: PlainTextSourceCreate = {
+  type: SourceTypeValue.PlainText,
+  title: '会议记录',
+  content: '正文……',
+}
+
+const markdown: MarkdownSourceCreate = {
+  type: SourceTypeValue.Markdown,
+  content: '# 标题\n\n正文……',
+}
+
+const webPage: WebPageSourceCreate = {
+  type: SourceTypeValue.WebPage,
+  url: 'https://example.com/article',
+}
+
+const payload: SourceCreateInput = text
+// POST ApiPaths.sources(workspaceId)
 ```
 
-## 当前契约覆盖（MVP）
+`SourceType` 仍完整保留后端预留枚举；投递表单只使用 `CREATABLE_SOURCE_TYPES` 中的三种。
 
-与 backend OpenAPI 对齐，生成结果中应包含：
+创建后来源进入 `pending`，随后可能为 `processing` / `ready` / `failed`。前端轮询 `Source.status`，失败原因读 `errorMessage`，网页地址读 `sourceUrl`。
 
-| Schema | 用途 |
-|--------|------|
-| `Workspace` / `WorkspaceCreate` / `WorkspaceUpdate` | 知识空间 |
-| `Source` / `SourceListItem` | 来源详情 / 列表 |
-| `PlainTextSourceCreate` / `PlainTextSourceUpdate` | 纯文字写入 |
-| `SourceType` / `SourceStatus` | 枚举 |
-| `ConnectedEvent` / `HeartbeatEvent` | SSE data |
+```ts
+import {
+  ApiPaths,
+  CREATABLE_SOURCE_TYPES,
+  INITIAL_SOURCE_STATUS,
+  SourceStatusValue,
+} from '@knowledgescope/shared'
 
-| 路径（`ApiPaths`） | 方法 | 说明 |
-|--------------------|------|------|
-| `/api/v1/workspaces` | CRUD | 知识空间 |
-| `/api/v1/workspaces/{id}/sources` | CRUD | 纯文字来源 |
-| `/api/v1/events/heartbeat` | GET (SSE) | `connected` + 周期 `heartbeat` |
+// INITIAL_SOURCE_STATUS === 'pending'
+// SourceStatusValue.Ready === 'ready'
+```
 
-JSON 字段为 **camelCase**（与 backend alias 一致）。
+### 3. 会话、严格问答与引用
 
-## 工作流约定
+```ts
+import type {
+  Conversation,
+  ConversationCreate,
+  ConversationDetail,
+  AskMessageRequest,
+  AskMessageResponse,
+  Citation,
+} from '@knowledgescope/shared'
+import {
+  ANSWER_MODE_STRICT,
+  ApiPaths,
+  STRICT_NO_EVIDENCE_REPLY,
+} from '@knowledgescope/shared'
 
-1. 在 `backend/app/schemas/` 修改或新增 Pydantic 模型。
-2. （可选）本地启动 backend，打开 `/docs` 确认 schema。
-3. 在 `shared/` 执行 `npm run generate`。
-4. 查看 `generated/openapi.ts`；若有新 schema，在 `src/schema.ts` / `src/index.ts` 补别名导出。
-5. 更新 `front` 调用处；**不要**在 front 再定义一份同名 interface。
+const createBody: ConversationCreate = { title: '研究讨论' }
+// POST ApiPaths.conversations(workspaceId)
 
-新增 SSE 事件或 SourceType 时：同样先改 backend，再 regenerate；若有新的事件名常量，同步补 `src/constants.ts`。
+const askBody: AskMessageRequest = {
+  content: '这篇资料的主要结论是什么？',
+  // 可选：chatModelProfileId / embeddingModelProfileId
+}
+// POST ApiPaths.conversationMessages(conversationId)
+// 响应 AskMessageResponse：userMessage + assistantMessage
+```
 
-## 验收对照（shared 部分）
+`assistantMessage.citations` 为 `Citation[]`，包含 `sourceId`、`chunkId`、`title` 与可选 `snippet`。
 
-对应业务文档里程碑 **M5**：
+`ANSWER_MODE_STRICT` 和 `STRICT_NO_EVIDENCE_REPLY` 是与后端对齐的协议常量，不是前端自行决定回答内容的逻辑。检索、拒答和生成仍全部由 backend 完成。
 
-1. `openapi/openapi.json` 含 Workspace、Source、SSE 相关 schema。
-2. `generated/openapi.ts` 可由脚本稳定再生。
-3. `src/index.ts` 能导出 MVP 所需类型别名与 `ApiPaths` / `SseEventName`。
-4. README 写清生成命令与「禁止手写平行 DTO」约定。
+### 4. 模型配置
+
+```ts
+import type {
+  ModelProfile,
+  ModelProfileCreate,
+  ModelProfileUpdate,
+} from '@knowledgescope/shared'
+import { ApiPaths, ModelPurposeValue } from '@knowledgescope/shared'
+
+const createBody: ModelProfileCreate = {
+  name: '我的聊天模型',
+  purpose: ModelPurposeValue.Chat,
+  baseUrl: 'https://example.com/v1',
+  modelName: 'my-chat-model',
+  apiKey: '<write-only-key>',
+}
+
+// GET/POST ApiPaths.modelProfiles()
+// PATCH/DELETE ApiPaths.modelProfile(profileId)
+```
+
+列表中的 `isSystemDefault` 用于标注「默认」。响应只含 `apiKeyMasked`；个人档更新不传 `apiKey` 时保留原 Key。
+
+**不要把默认模型名、完整 API Key、JWT 密钥或 Chroma 配置写进 shared/front。** 这些属于 [`docs/配置说明.md`](../docs/配置说明.md) 与 backend。
+
+### 5. 带 Token 的 SSE 心跳
+
+浏览器原生 `EventSource` 不能自定义 `Authorization` 头，可把 accessToken 交给路径工厂：
+
+```ts
+import type { ConnectedEvent, HeartbeatEvent } from '@knowledgescope/shared'
+import { ApiPaths, SseEventName } from '@knowledgescope/shared'
+
+const source = new EventSource(ApiPaths.heartbeat(accessToken))
+
+source.addEventListener(SseEventName.Connected, (event) => {
+  const data = JSON.parse(event.data) as ConnectedEvent
+})
+
+source.addEventListener(SseEventName.Heartbeat, (event) => {
+  const data = JSON.parse(event.data) as HeartbeatEvent
+})
+```
+
+若使用支持自定义请求头的 SSE 客户端，也可调用无参数 `ApiPaths.heartbeat()`，自行添加 Bearer 头。
+
+## 当前契约索引
+
+本次从 backend 生成 **14 条路径、29 个 schema**。字段以 `generated/openapi.ts` 和 `openapi/openapi.json` 为准。
+
+### Schema
+
+| 分组 | 导出 |
+|------|------|
+| Auth | `RegisterRequest`、`LoginRequest`、`TokenResponse`、`UserPublic` |
+| Workspace | `Workspace`、`WorkspaceCreate`、`WorkspaceUpdate` |
+| Source | `Source`、`SourceListItem`、`SourceCreate`、`SourceUpdate` |
+| 来源输入收窄 | `PlainTextSourceCreate`、`MarkdownSourceCreate`、`WebPageSourceCreate`、`SourceCreateInput` |
+| 枚举 | `SourceType`、`SourceStatus`、`MessageRole`、`ModelPurpose` |
+| 会话问答 | `Conversation`、`ConversationCreate`、`ConversationDetail`、`Message`、`Citation`、`AskMessageRequest`、`AskMessageResponse` |
+| 模型档 | `ModelProfile`、`ModelProfileCreate`、`ModelProfileUpdate` |
+| SSE | `ConnectedEvent`、`HeartbeatEvent` |
+| FastAPI 错误 | `HTTPValidationError`、`ValidationError` |
+
+Chunk、向量库记录、密码哈希、加密 API Key 不是前端 API 契约，不应在这里另造 DTO。
+
+### ApiPaths
+
+| 方法 | 地址 |
+|------|------|
+| `authRegister()` | `POST /api/v1/auth/register` |
+| `authLogin()` | `POST /api/v1/auth/login` |
+| `authMe()` | `GET /api/v1/auth/me` |
+| `workspaces()` / `workspace(id)` | 空间 CRUD |
+| `sources(id)` / `source(id, sourceId)` | 来源 CRUD 与状态轮询 |
+| `conversations(id)` / `conversation(id)` | 会话创建、列表、详情、删除 |
+| `conversationMessages(id)` | 严格边界提问 |
+| `modelProfiles()` / `modelProfile(id)` | 模型档列表、创建、更新、删除 |
+| `heartbeat(token?)` | `GET /api/v1/events/heartbeat` |
+
+需要完整 OpenAPI `paths` / `operations` 时：
+
+```ts
+import type { paths, operations, components } from '@knowledgescope/shared'
+```
+
+JSON 字段统一为 **camelCase**；Python 内部为 snake_case。
+
+## 与配置说明的边界
+
+`配置说明.md` 中的配置分两类：
+
+1. **后端运行配置**：JWT、密码哈希、分块、网页采集、向量库、默认模型等。只放 backend `.env` / `Settings` / 常量类，不生成到 TS。
+2. **前端需要理解的协议约定**：例如来源类型、处理状态、模型用途、SSE 事件名。枚举以生成的 OpenAPI 类型为准；常用字面量由 `src/constants.ts` 的 `satisfies` 约束，后端删掉或改值时会在 `typecheck` 暴露不一致。
+
+`STRICT_NO_EVIDENCE_REPLY` 是后端未进入 OpenAPI schema 的固定协议文案，因此集中在 shared 常量中供前端核对展示；修改时应同步 backend `app/constants.py`。
+
+## 工作流与验收
+
+1. 修改 `backend/app/schemas/` 或路由。
+2. 在 `shared/` 执行 `npm run generate`。
+3. 若新增 schema，在 `src/schema.ts` 补别名，并确认 `src/index.ts` 导出。
+4. 执行 `npm run typecheck`。
+5. 再修改 front 的 API 封装和页面；不在 front 定义平行 DTO。
+6. 将 `openapi/openapi.json`、`generated/openapi.ts` 与源码一起提交。
+
+shared 侧验收：
+
+- Auth / Workspace / Source / Conversation / ModelProfile / SSE schema 均已生成。
+- 三种来源输入与条件必填收窄类型可直接 import。
+- 所有 Phase 2 路径可由 `ApiPaths` 构造，SSE 支持 accessToken 查询参数。
+- `npm run generate` 可重复执行，`npm run typecheck` 通过。
 
 ## 常见问题
 
-**Q: 为什么不直接在 shared 手写 TypeScript interface？**  
-A: 会与 Pydantic 漂移。方案 A 要求后端为真相源，shared 只消费生成结果。
+**Q: `PlainTextSourceCreate` 还在，是否代表仍是 MVP 契约？**  
+A: 不是。它现在是 `SourceCreate` 的 `type: 'plain_text' + content: string` 收窄别名，用于表单；另有 `MarkdownSourceCreate`、`WebPageSourceCreate`。旧的 `PlainTextSourceUpdate` 仅作为迁移别名保留。
 
-**Q: `src/schema.ts` 里的 `export type Workspace = ...` 算不算手写 DTO？**  
-A: 不算。那是对生成 schema 的别名投影，字段定义仍来自 OpenAPI。
+**Q: 为什么 OpenAPI 中 `SourceCreate.content` 和 `url` 是可选？**  
+A: 后端用模型校验器按 `type` 判断条件必填。shared 的 `SourceCreateInput` 联合类型把这条规则反映到 TS，不替代服务端校验。
 
-**Q: generate 报错找不到 python？**  
-A: 先完成 `backend/.venv` 安装；或改用 `npm run generate:from-url`（需 backend 已在 8000 端口运行）。
+**Q: 为什么生成结果里没有 Chunk？**  
+A: Chunk 和向量是入库内部模型，当前路由没有暴露对应 API。前端问答引用使用公开的 `Citation`。
 
-**Q: 要不要把 `generated/` 提交进 git？**  
-A: MVP 建议提交，方便 front 在未跑生成脚本时也能拿到类型；后端契约变更后务必重新 generate 并一并提交。
+**Q: generate 找不到 Python 或依赖报错？**  
+A: 先准备 `backend/.venv`；或启动 backend 后执行 `npm run generate:from-url`。
+
+**Q: generated/ 要不要提交？**  
+A: 建议提交，便于 front 不执行脚本也能使用类型。后端契约变化后必须重新生成并一起提交。

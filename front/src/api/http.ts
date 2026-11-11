@@ -2,7 +2,7 @@
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/+$/, '')
 
 export class ApiError extends Error {
-  // HTTP 状态码，用在调用方按状态分支（如 404 跳转）
+  // HTTP 状态码，用在调用方按状态分支（如 401 登出、404 返回）
   readonly status: number
 
   constructor(status: number, message: string) {
@@ -45,14 +45,23 @@ function extractDetailMessage(payload: unknown): string | null {
 
 type ApiRequestOptions = Omit<RequestInit, 'body'> & {
   body?: unknown
+  skipAuth?: boolean
 }
 
-// 统一 JSON 请求封装，用在 workspaces/sources API 模块
+// 统一 JSON 请求封装并附带 Bearer，用在业务 API 模块
 export async function apiRequest<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
-  // 请求头，用在 JSON 读写
+  // 请求头，用在 JSON 读写与鉴权
   const headers = new Headers(options.headers)
   if (!headers.has('Accept')) {
     headers.set('Accept', 'application/json')
+  }
+
+  if (!options.skipAuth) {
+    // 当前访问令牌，用在 Authorization
+    const token = localStorage.getItem('knowledgescope.access_token')
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`)
+    }
   }
 
   // 序列化后的 body，用在 fetch
@@ -62,9 +71,11 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
     body = JSON.stringify(options.body)
   }
 
+  // fetch 选项（不含自定义 skipAuth / body 原值），用在最终请求
+  const { body: _ignoredBody, skipAuth: _ignoredSkipAuth, ...fetchOptions } = options
   // 原始响应，用在状态码与正文解析
   const response = await fetch(buildApiUrl(path), {
-    ...options,
+    ...fetchOptions,
     headers,
     body,
   })

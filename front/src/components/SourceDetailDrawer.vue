@@ -2,14 +2,12 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 
-import type { PlainTextSourceUpdate, Source } from '@knowledgescope/shared'
-import { MVP_SOURCE_STATUS, MVP_SOURCE_TYPE } from '@knowledgescope/shared'
+import type { Source, SourceUpdate } from '@knowledgescope/shared'
+import { SourceTypeValue } from '@knowledgescope/shared'
 
 import { deleteSource, getSource, updateSource } from '@/api/sources'
-import {
-  SOURCE_CONTENT_MAX_LENGTH,
-  SOURCE_TITLE_MAX_LENGTH,
-} from '@/constants/ui'
+import { SOURCE_CONTENT_MAX_LENGTH, SOURCE_TITLE_MAX_LENGTH } from '@/constants/ui'
+import { SOURCE_STATUS_LABEL, SOURCE_TYPE_LABEL, sourceStatusTagType } from '@/utils/sourceStatus'
 import { formatDateTime } from '@/utils/datetime'
 import { getErrorMessage } from '@/utils/error'
 
@@ -30,7 +28,7 @@ const visible = computed({
   set: (value: boolean) => emit('update:modelValue', value),
 })
 
-// 详情加载中，用在抽屉骨架态
+// 详情加载中，用在抽屉 loading
 const loading = ref(false)
 // 保存中，用在编辑保存按钮
 const saving = ref(false)
@@ -109,7 +107,7 @@ watch(
   },
 )
 
-// 进入编辑模式，用在「编辑」按钮
+// 进入编辑模式，用在「编辑」按钮；web_page 仅改标题
 function startEdit(): void {
   if (!detail.value) {
     return
@@ -141,10 +139,12 @@ async function handleSave(): Promise<void> {
     return
   }
 
-  // PATCH 载荷，用在 updateSource
-  const payload: PlainTextSourceUpdate = {
+  // PATCH 载荷，用在 updateSource；网页仅改标题
+  const payload: SourceUpdate = {
     title: form.title.trim() || undefined,
-    content: form.content.trim(),
+  }
+  if (detail.value?.type !== SourceTypeValue.WebPage) {
+    payload.content = form.content.trim()
   }
 
   saving.value = true
@@ -168,7 +168,7 @@ async function handleDelete(): Promise<void> {
 
   try {
     await ElMessageBox.confirm(
-      `确认删除来源「${detail.value.title}」？此操作不可恢复。`,
+      `确认删除来源「${detail.value.title}」？其分块与向量将一并清理。`,
       '删除来源',
       {
         type: 'warning',
@@ -192,24 +192,49 @@ async function handleDelete(): Promise<void> {
 </script>
 
 <template>
-  <el-drawer v-model="visible" title="来源详情" size="480px" destroy-on-close>
+  <el-drawer v-model="visible" title="来源详情" size="520px" destroy-on-close>
     <div v-loading="loading" class="min-h-[240px]">
       <template v-if="detail && !editing">
         <div class="flex flex-col gap-[16px]">
           <div>
             <div class="text-lg text-[#111827]">{{ detail.title }}</div>
             <div class="mt-[8px] flex flex-wrap gap-[8px]">
-              <el-tag size="small">{{ detail.type || MVP_SOURCE_TYPE }}</el-tag>
-              <el-tag size="small" type="success">{{ detail.status || MVP_SOURCE_STATUS }}</el-tag>
+              <el-tag size="small">{{ SOURCE_TYPE_LABEL[detail.type] || detail.type }}</el-tag>
+              <el-tag size="small" :type="sourceStatusTagType(detail.status)">
+                {{ SOURCE_STATUS_LABEL[detail.status] }}
+              </el-tag>
             </div>
           </div>
+
+          <div
+            v-if="detail.errorMessage"
+            class="rounded-[8px] bg-[#FEF2F2] p-[12px] text-sm text-[#B91C1C]"
+          >
+            {{ detail.errorMessage }}
+          </div>
+
+          <div
+            v-if="detail.sourceUrl"
+            class="break-all text-sm text-[#2563EB]"
+          >
+            {{ detail.sourceUrl }}
+          </div>
+
           <div class="text-sm text-[#6B7280]">
             <div>创建：{{ formatDateTime(detail.createdAt) }}</div>
             <div>更新：{{ formatDateTime(detail.updatedAt) }}</div>
           </div>
-          <div class="whitespace-pre-wrap rounded-[8px] bg-[#F9FAFB] p-[16px] text-sm text-[#374151]">
+
+          <div
+            v-if="detail.content"
+            class="whitespace-pre-wrap rounded-[8px] bg-[#F9FAFB] p-[16px] text-sm text-[#374151]"
+          >
             {{ detail.content }}
           </div>
+          <div v-else class="text-sm text-[#9CA3AF]">
+            暂无正文；待入库完成后可查看提取内容。
+          </div>
+
           <div class="flex justify-end gap-[8px]">
             <el-button type="danger" plain @click="handleDelete">删除</el-button>
             <el-button type="primary" @click="startEdit">编辑</el-button>
@@ -224,19 +249,26 @@ async function handleDelete(): Promise<void> {
               v-model="form.title"
               :maxlength="SOURCE_TITLE_MAX_LENGTH"
               show-word-limit
-              placeholder="可选；留空则保持或由服务端规则处理"
+              placeholder="来源标题"
             />
           </el-form-item>
-          <el-form-item label="正文" prop="content">
+          <el-form-item
+            v-if="detail.type !== SourceTypeValue.WebPage"
+            label="正文"
+            prop="content"
+          >
             <el-input
               v-model="form.content"
               type="textarea"
               :rows="12"
               :maxlength="SOURCE_CONTENT_MAX_LENGTH"
               show-word-limit
-              placeholder="纯文字正文"
+              placeholder="纯文字或 Markdown 正文"
             />
           </el-form-item>
+          <div v-else class="mb-[16px] text-sm text-[#6B7280]">
+            网页来源本期仅支持修改标题。
+          </div>
         </el-form>
         <div class="flex justify-end gap-[8px]">
           <el-button @click="cancelEdit">取消</el-button>

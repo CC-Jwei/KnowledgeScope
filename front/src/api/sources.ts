@@ -1,14 +1,14 @@
 import type {
-  PlainTextSourceCreate,
-  PlainTextSourceUpdate,
   Source,
+  SourceCreateInput,
   SourceListItem,
+  SourceUpdate,
 } from '@knowledgescope/shared'
 import { ApiPaths } from '@knowledgescope/shared'
 
 import { apiRequest } from './http'
 
-// 列出空间下来源（含预览），用在空间详情页来源列表
+// 列出空间下来源（含状态与预览），用在详情页列表与轮询
 export function listSources(workspaceId: string): Promise<SourceListItem[]> {
   return apiRequest<SourceListItem[]>(ApiPaths.sources(workspaceId))
 }
@@ -18,11 +18,8 @@ export function getSource(workspaceId: string, sourceId: string): Promise<Source
   return apiRequest<Source>(ApiPaths.source(workspaceId, sourceId))
 }
 
-// 创建纯文字来源，用在详情页投递表单
-export function createSource(
-  workspaceId: string,
-  payload: PlainTextSourceCreate,
-): Promise<Source> {
+// 创建 plain_text / markdown / web_page 来源，用在按类型投递表单
+export function createSource(workspaceId: string, payload: SourceCreateInput): Promise<Source> {
   return apiRequest<Source>(ApiPaths.sources(workspaceId), {
     method: 'POST',
     body: payload,
@@ -33,7 +30,7 @@ export function createSource(
 export function updateSource(
   workspaceId: string,
   sourceId: string,
-  payload: PlainTextSourceUpdate,
+  payload: SourceUpdate,
 ): Promise<Source> {
   return apiRequest<Source>(ApiPaths.source(workspaceId, sourceId), {
     method: 'PATCH',

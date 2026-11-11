@@ -2,16 +2,124 @@
   "openapi": "3.1.0",
   "info": {
     "title": "KnowledgeScope",
-    "description": "知域 KnowledgeScope MVP API。契约以本服务 Pydantic 模型为真相源；请使用 /docs 或 /openapi.json 供前端生成类型。",
+    "description": "知域 KnowledgeScope API（Phase 2）。契约以本服务 Pydantic 模型为真相源；除 /auth/register、/auth/login、/health 外需 Bearer Token。SSE 亦可用查询参数 access_token。",
     "version": "0.1.0"
   },
   "paths": {
+    "/api/v1/auth/register": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "注册（手机号+密码）",
+        "operationId": "register_api_v1_auth_register_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "登录（手机号+密码）",
+        "operationId": "login_api_v1_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "当前用户",
+        "operationId": "me_api_v1_auth_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPublic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/workspaces": {
       "get": {
         "tags": [
           "workspaces"
         ],
-        "summary": "列出知识空间",
+        "summary": "列出我的知识空间",
         "operationId": "list_workspaces_api_v1_workspaces_get",
         "responses": {
           "200": {
@@ -28,7 +136,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -67,7 +180,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/api/v1/workspaces/{workspace_id}": {
@@ -77,6 +195,11 @@
         ],
         "summary": "获取知识空间详情",
         "operationId": "get_workspace_api_v1_workspaces__workspace_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "workspace_id",
@@ -117,6 +240,11 @@
         ],
         "summary": "更新知识空间",
         "operationId": "update_workspace_api_v1_workspaces__workspace_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "workspace_id",
@@ -165,8 +293,13 @@
         "tags": [
           "workspaces"
         ],
-        "summary": "删除知识空间（级联删除来源）",
+        "summary": "删除知识空间（级联来源/会话/向量）",
         "operationId": "delete_workspace_api_v1_workspaces__workspace_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "workspace_id",
@@ -200,8 +333,13 @@
         "tags": [
           "sources"
         ],
-        "summary": "创建纯文字来源",
+        "summary": "创建来源（plain_text / markdown / web_page）",
         "operationId": "create_source_api_v1_workspaces__workspace_id__sources_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "workspace_id",
@@ -218,7 +356,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PlainTextSourceCreate"
+                "$ref": "#/components/schemas/SourceCreate"
               }
             }
           }
@@ -252,6 +390,11 @@
         ],
         "summary": "列出空间下来源",
         "operationId": "list_sources_api_v1_workspaces__workspace_id__sources_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "workspace_id",
@@ -296,8 +439,13 @@
         "tags": [
           "sources"
         ],
-        "summary": "获取来源详情（含全文）",
+        "summary": "获取来源详情（含全文与状态）",
         "operationId": "get_source_api_v1_workspaces__workspace_id__sources__source_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "workspace_id",
@@ -345,8 +493,13 @@
         "tags": [
           "sources"
         ],
-        "summary": "更新纯文字来源标题或正文",
+        "summary": "更新来源标题或正文",
         "operationId": "update_source_api_v1_workspaces__workspace_id__sources__source_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "workspace_id",
@@ -372,7 +525,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PlainTextSourceUpdate"
+                "$ref": "#/components/schemas/SourceUpdate"
               }
             }
           }
@@ -404,8 +557,13 @@
         "tags": [
           "sources"
         ],
-        "summary": "删除来源",
+        "summary": "删除来源（含向量）",
         "operationId": "delete_source_api_v1_workspaces__workspace_id__sources__source_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "workspace_id",
@@ -443,13 +601,455 @@
         }
       }
     },
+    "/api/v1/workspaces/{workspace_id}/conversations": {
+      "post": {
+        "tags": [
+          "conversations"
+        ],
+        "summary": "创建会话",
+        "operationId": "create_conversation_api_v1_workspaces__workspace_id__conversations_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Workspace Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConversationCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Conversation"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "conversations"
+        ],
+        "summary": "列出会话",
+        "operationId": "list_conversations_api_v1_workspaces__workspace_id__conversations_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Workspace Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Conversation"
+                  },
+                  "title": "Response List Conversations Api V1 Workspaces  Workspace Id  Conversations Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/conversations/{conversation_id}": {
+      "get": {
+        "tags": [
+          "conversations"
+        ],
+        "summary": "会话详情（含消息）",
+        "operationId": "get_conversation_api_v1_conversations__conversation_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "conversations"
+        ],
+        "summary": "删除会话（不动来源）",
+        "operationId": "delete_conversation_api_v1_conversations__conversation_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/conversations/{conversation_id}/messages": {
+      "post": {
+        "tags": [
+          "conversations"
+        ],
+        "summary": "提问（严格边界检索 + 生成）",
+        "operationId": "ask_message_api_v1_conversations__conversation_id__messages_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskMessageRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskMessageResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/model-profiles": {
+      "get": {
+        "tags": [
+          "model-profiles"
+        ],
+        "summary": "列出系统默认 + 我的模型档（Key 脱敏）",
+        "operationId": "list_model_profiles_api_v1_model_profiles_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ModelProfile"
+                  },
+                  "type": "array",
+                  "title": "Response List Model Profiles Api V1 Model Profiles Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "model-profiles"
+        ],
+        "summary": "创建个人模型档",
+        "operationId": "create_model_profile_api_v1_model_profiles_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelProfileCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelProfile"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/model-profiles/{profile_id}": {
+      "patch": {
+        "tags": [
+          "model-profiles"
+        ],
+        "summary": "更新个人模型档（Key 不传则保留）",
+        "operationId": "update_model_profile_api_v1_model_profiles__profile_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "profile_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Profile Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelProfileUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelProfile"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "model-profiles"
+        ],
+        "summary": "删除个人模型档（不可删系统默认）",
+        "operationId": "delete_model_profile_api_v1_model_profiles__profile_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "profile_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Profile Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/events/heartbeat": {
       "get": {
         "tags": [
           "events"
         ],
-        "summary": "SSE 心跳流",
+        "summary": "SSE 心跳流（需登录）",
         "operationId": "heartbeat_stream_api_v1_events_heartbeat_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "access_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "EventSource 无法设头时用查询参数传 JWT",
+              "title": "Access Token"
+            },
+            "description": "EventSource 无法设头时用查询参数传 JWT"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Server-Sent Events 流（connected + 周期性 heartbeat）",
@@ -461,6 +1061,16 @@
                 "schema": {
                   "type": "string",
                   "example": "event: connected\ndata: {\"message\":\"connected\"}\n\nevent: heartbeat\ndata: {\"ts\":\"2026-11-09T06:00:00.000Z\",\"serverTime\":\"2026-11-09T06:00:00.000Z\"}\n\n"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -496,6 +1106,213 @@
   },
   "components": {
     "schemas": {
+      "AskMessageRequest": {
+        "properties": {
+          "content": {
+            "type": "string",
+            "maxLength": 100000,
+            "minLength": 1,
+            "title": "Content"
+          },
+          "chatModelProfileId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chatmodelprofileid"
+          },
+          "embeddingModelProfileId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embeddingmodelprofileid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "AskMessageRequest"
+      },
+      "AskMessageResponse": {
+        "properties": {
+          "userMessage": {
+            "$ref": "#/components/schemas/Message"
+          },
+          "assistantMessage": {
+            "$ref": "#/components/schemas/Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "userMessage",
+          "assistantMessage"
+        ],
+        "title": "AskMessageResponse"
+      },
+      "Citation": {
+        "properties": {
+          "sourceId": {
+            "type": "string",
+            "title": "Sourceid"
+          },
+          "chunkId": {
+            "type": "string",
+            "title": "Chunkid"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "snippet": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snippet"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sourceId",
+          "chunkId",
+          "title"
+        ],
+        "title": "Citation"
+      },
+      "Conversation": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "workspaceId": {
+            "type": "string",
+            "title": "Workspaceid"
+          },
+          "ownerId": {
+            "type": "string",
+            "title": "Ownerid"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updatedat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "workspaceId",
+          "ownerId",
+          "title",
+          "createdAt",
+          "updatedAt"
+        ],
+        "title": "Conversation"
+      },
+      "ConversationCreate": {
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title",
+            "description": "可选标题；空则首问后自动生成"
+          }
+        },
+        "type": "object",
+        "title": "ConversationCreate"
+      },
+      "ConversationDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "workspaceId": {
+            "type": "string",
+            "title": "Workspaceid"
+          },
+          "ownerId": {
+            "type": "string",
+            "title": "Ownerid"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updatedat"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/Message"
+            },
+            "type": "array",
+            "title": "Messages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "workspaceId",
+          "ownerId",
+          "title",
+          "createdAt",
+          "updatedAt"
+        ],
+        "title": "ConversationDetail"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -509,78 +1326,285 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
-      "PlainTextSourceCreate": {
+      "LoginRequest": {
         "properties": {
-          "title": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 200
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Title",
-            "description": "可选标题；未传时由服务端生成"
-          },
-          "content": {
+          "phone": {
             "type": "string",
-            "maxLength": 100000,
-            "minLength": 1,
-            "title": "Content",
-            "description": "纯文字正文"
+            "maxLength": 11,
+            "title": "Phone",
+            "description": "中国大陆手机号"
           },
-          "type": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SourceType"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "可选；若传入必须为 plain_text"
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Password",
+            "description": "登录密码"
           }
         },
         "type": "object",
         "required": [
-          "content"
+          "phone",
+          "password"
         ],
-        "title": "PlainTextSourceCreate"
+        "title": "LoginRequest"
       },
-      "PlainTextSourceUpdate": {
+      "Message": {
         "properties": {
-          "title": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "conversationId": {
+            "type": "string",
+            "title": "Conversationid"
+          },
+          "role": {
+            "$ref": "#/components/schemas/MessageRole"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/Citation"
+            },
+            "type": "array",
+            "title": "Citations"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "conversationId",
+          "role",
+          "content",
+          "createdAt"
+        ],
+        "title": "Message"
+      },
+      "MessageRole": {
+        "type": "string",
+        "enum": [
+          "user",
+          "assistant",
+          "system"
+        ],
+        "title": "MessageRole",
+        "description": "会话消息角色。"
+      },
+      "ModelProfile": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "ownerId": {
             "anyOf": [
               {
-                "type": "string",
-                "maxLength": 200
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Title",
-            "description": "标题"
+            "title": "Ownerid"
           },
-          "content": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/ModelPurpose"
+          },
+          "baseUrl": {
+            "type": "string",
+            "title": "Baseurl"
+          },
+          "modelName": {
+            "type": "string",
+            "title": "Modelname"
+          },
+          "apiKeyMasked": {
+            "type": "string",
+            "title": "Apikeymasked"
+          },
+          "isSystemDefault": {
+            "type": "boolean",
+            "title": "Issystemdefault"
+          },
+          "createdAt": {
             "anyOf": [
               {
                 "type": "string",
-                "maxLength": 100000,
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Createdat"
+          },
+          "updatedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updatedat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "purpose",
+          "baseUrl",
+          "modelName",
+          "apiKeyMasked",
+          "isSystemDefault"
+        ],
+        "title": "ModelProfile"
+      },
+      "ModelProfileCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/ModelPurpose"
+          },
+          "baseUrl": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Baseurl"
+          },
+          "modelName": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Modelname"
+          },
+          "apiKey": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Apikey"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "purpose",
+          "baseUrl",
+          "modelName",
+          "apiKey"
+        ],
+        "title": "ModelProfileCreate"
+      },
+      "ModelProfileUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
                 "minLength": 1
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Content",
-            "description": "纯文字正文"
+            "title": "Name"
+          },
+          "baseUrl": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseurl"
+          },
+          "modelName": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modelname"
+          },
+          "apiKey": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Apikey"
           }
         },
         "type": "object",
-        "title": "PlainTextSourceUpdate"
+        "title": "ModelProfileUpdate"
+      },
+      "ModelPurpose": {
+        "type": "string",
+        "enum": [
+          "chat",
+          "embedding"
+        ],
+        "title": "ModelPurpose",
+        "description": "模型配置档用途。"
+      },
+      "RegisterRequest": {
+        "properties": {
+          "phone": {
+            "type": "string",
+            "maxLength": 11,
+            "title": "Phone",
+            "description": "中国大陆手机号"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 6,
+            "title": "Password",
+            "description": "登录密码"
+          }
+        },
+        "type": "object",
+        "required": [
+          "phone",
+          "password"
+        ],
+        "title": "RegisterRequest"
       },
       "Source": {
         "properties": {
@@ -591,6 +1615,10 @@
           "workspaceId": {
             "type": "string",
             "title": "Workspaceid"
+          },
+          "ownerId": {
+            "type": "string",
+            "title": "Ownerid"
           },
           "type": {
             "$ref": "#/components/schemas/SourceType"
@@ -628,12 +1656,35 @@
             "type": "string",
             "title": "Contentpreview",
             "description": "列表预览截断文本"
+          },
+          "sourceUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sourceurl"
+          },
+          "errorMessage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Errormessage"
           }
         },
         "type": "object",
         "required": [
           "id",
           "workspaceId",
+          "ownerId",
           "type",
           "title",
           "status",
@@ -642,6 +1693,58 @@
           "contentPreview"
         ],
         "title": "Source"
+      },
+      "SourceCreate": {
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/SourceType",
+            "description": "plain_text | markdown | web_page"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title",
+            "description": "可选标题；未传时由服务端生成"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content",
+            "description": "纯文字或 Markdown 正文"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url",
+            "description": "web_page 必填的 http(s) URL"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "SourceCreate"
       },
       "SourceListItem": {
         "properties": {
@@ -652,6 +1755,10 @@
           "workspaceId": {
             "type": "string",
             "title": "Workspaceid"
+          },
+          "ownerId": {
+            "type": "string",
+            "title": "Ownerid"
           },
           "type": {
             "$ref": "#/components/schemas/SourceType"
@@ -676,12 +1783,35 @@
           "contentPreview": {
             "type": "string",
             "title": "Contentpreview"
+          },
+          "sourceUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sourceurl"
+          },
+          "errorMessage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Errormessage"
           }
         },
         "type": "object",
         "required": [
           "id",
           "workspaceId",
+          "ownerId",
           "type",
           "title",
           "status",
@@ -695,30 +1825,111 @@
       "SourceStatus": {
         "type": "string",
         "enum": [
-          "ready",
           "pending",
           "processing",
+          "ready",
           "failed"
         ],
         "title": "SourceStatus",
-        "description": "来源处理状态。MVP 创建后直接为 ready。"
+        "description": "来源处理状态。"
       },
       "SourceType": {
         "type": "string",
         "enum": [
           "plain_text",
+          "markdown",
           "web_page",
           "video_url",
           "image",
           "image_url",
-          "markdown",
           "pdf",
           "word",
           "excel",
           "powerpoint"
         ],
         "title": "SourceType",
-        "description": "来源类型。创建接口仅允许 plain_text，其余为后续预留。"
+        "description": "来源类型。创建仅允许初期落地集。"
+      },
+      "SourceUpdate": {
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title",
+            "description": "标题"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100000,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content",
+            "description": "纯文字正文"
+          }
+        },
+        "type": "object",
+        "title": "SourceUpdate"
+      },
+      "TokenResponse": {
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "title": "Accesstoken"
+          },
+          "tokenType": {
+            "type": "string",
+            "title": "Tokentype",
+            "default": "bearer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "accessToken"
+        ],
+        "title": "TokenResponse"
+      },
+      "UserPublic": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "phone": {
+            "type": "string",
+            "title": "Phone"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updatedat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "phone",
+          "createdAt",
+          "updatedAt"
+        ],
+        "title": "UserPublic"
       },
       "ValidationError": {
         "properties": {
@@ -766,6 +1977,10 @@
             "type": "string",
             "title": "Id"
           },
+          "ownerId": {
+            "type": "string",
+            "title": "Ownerid"
+          },
           "name": {
             "type": "string",
             "title": "Name"
@@ -800,6 +2015,7 @@
         "type": "object",
         "required": [
           "id",
+          "ownerId",
           "name",
           "description",
           "createdAt",
@@ -911,6 +2127,23 @@
         "title": "HeartbeatEvent",
         "type": "object"
       }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      },
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "登录后获得的 accessToken；SSE 也可用 ?access_token="
+      }
     }
-  }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ]
 }

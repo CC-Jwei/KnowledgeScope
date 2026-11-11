@@ -71,7 +71,7 @@ function openWorkspace(workspace: Workspace): void {
 async function handleDelete(workspace: Workspace): Promise<void> {
   try {
     await ElMessageBox.confirm(
-      `确认删除知识空间「${workspace.name}」？其下全部来源将一并删除，且不可恢复。`,
+      `确认删除知识空间「${workspace.name}」？来源、会话、分块与向量将一并删除，且不可恢复。`,
       '删除知识空间',
       {
         type: 'warning',
@@ -103,7 +103,7 @@ onMounted(() => {
       <div>
         <div class="text-2xl text-[#111827]">知识空间</div>
         <div class="mt-[4px] text-sm text-[#6B7280]">
-          创建空间后，可在详情页投递并管理纯文字来源
+          仅展示当前登录用户的空间；详情页可投递来源并进入严格问答
         </div>
       </div>
       <el-button type="primary" :icon="Plus" @click="openCreateDialog">创建知识空间</el-button>

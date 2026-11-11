@@ -99,6 +99,7 @@ npm.cmd run dev
 | [`docs/MVP业务说明.md`](docs/MVP业务说明.md) | Phase 1 基线：空间 / plain_text / SSE |
 | [`docs/初期基本功能开发说明.md`](docs/初期基本功能开发说明.md) | Phase 2：多用户、RAG、多 SourceType、数据模型 |
 | [`docs/配置说明.md`](docs/配置说明.md) | 配置键与默认值（禁止业务魔法字面量） |
+| [`docs/本地启动说明.md`](docs/本地启动说明.md) | 本地前后端启动、自检与常见问题 |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | 本地开发与贡献约定 |
 
 ## 路线图（摘录）

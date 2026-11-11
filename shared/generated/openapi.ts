@@ -4,6 +4,57 @@
  */
 
 export interface paths {
+    "/api/v1/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 注册（手机号+密码） */
+        post: operations["register_api_v1_auth_register_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 登录（手机号+密码） */
+        post: operations["login_api_v1_auth_login_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 当前用户 */
+        get: operations["me_api_v1_auth_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces": {
         parameters: {
             query?: never;
@@ -11,7 +62,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** 列出知识空间 */
+        /** 列出我的知识空间 */
         get: operations["list_workspaces_api_v1_workspaces_get"];
         put?: never;
         /** 创建知识空间 */
@@ -33,7 +84,7 @@ export interface paths {
         get: operations["get_workspace_api_v1_workspaces__workspace_id__get"];
         put?: never;
         post?: never;
-        /** 删除知识空间（级联删除来源） */
+        /** 删除知识空间（级联来源/会话/向量） */
         delete: operations["delete_workspace_api_v1_workspaces__workspace_id__delete"];
         options?: never;
         head?: never;
@@ -51,7 +102,7 @@ export interface paths {
         /** 列出空间下来源 */
         get: operations["list_sources_api_v1_workspaces__workspace_id__sources_get"];
         put?: never;
-        /** 创建纯文字来源 */
+        /** 创建来源（plain_text / markdown / web_page） */
         post: operations["create_source_api_v1_workspaces__workspace_id__sources_post"];
         delete?: never;
         options?: never;
@@ -66,16 +117,105 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** 获取来源详情（含全文） */
+        /** 获取来源详情（含全文与状态） */
         get: operations["get_source_api_v1_workspaces__workspace_id__sources__source_id__get"];
         put?: never;
         post?: never;
-        /** 删除来源 */
+        /** 删除来源（含向量） */
         delete: operations["delete_source_api_v1_workspaces__workspace_id__sources__source_id__delete"];
         options?: never;
         head?: never;
-        /** 更新纯文字来源标题或正文 */
+        /** 更新来源标题或正文 */
         patch: operations["update_source_api_v1_workspaces__workspace_id__sources__source_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/workspaces/{workspace_id}/conversations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 列出会话 */
+        get: operations["list_conversations_api_v1_workspaces__workspace_id__conversations_get"];
+        put?: never;
+        /** 创建会话 */
+        post: operations["create_conversation_api_v1_workspaces__workspace_id__conversations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/conversations/{conversation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 会话详情（含消息） */
+        get: operations["get_conversation_api_v1_conversations__conversation_id__get"];
+        put?: never;
+        post?: never;
+        /** 删除会话（不动来源） */
+        delete: operations["delete_conversation_api_v1_conversations__conversation_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/conversations/{conversation_id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 提问（严格边界检索 + 生成） */
+        post: operations["ask_message_api_v1_conversations__conversation_id__messages_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/model-profiles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 列出系统默认 + 我的模型档（Key 脱敏） */
+        get: operations["list_model_profiles_api_v1_model_profiles_get"];
+        put?: never;
+        /** 创建个人模型档 */
+        post: operations["create_model_profile_api_v1_model_profiles_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/model-profiles/{profile_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** 删除个人模型档（不可删系统默认） */
+        delete: operations["delete_model_profile_api_v1_model_profiles__profile_id__delete"];
+        options?: never;
+        head?: never;
+        /** 更新个人模型档（Key 不传则保留） */
+        patch: operations["update_model_profile_api_v1_model_profiles__profile_id__patch"];
         trace?: never;
     };
     "/api/v1/events/heartbeat": {
@@ -85,7 +225,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** SSE 心跳流 */
+        /** SSE 心跳流（需登录） */
         get: operations["heartbeat_stream_api_v1_events_heartbeat_get"];
         put?: never;
         post?: never;
@@ -116,38 +256,187 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AskMessageRequest */
+        AskMessageRequest: {
+            /** Content */
+            content: string;
+            /** Chatmodelprofileid */
+            chatModelProfileId?: string | null;
+            /** Embeddingmodelprofileid */
+            embeddingModelProfileId?: string | null;
+        };
+        /** AskMessageResponse */
+        AskMessageResponse: {
+            userMessage: components["schemas"]["Message"];
+            assistantMessage: components["schemas"]["Message"];
+        };
+        /** Citation */
+        Citation: {
+            /** Sourceid */
+            sourceId: string;
+            /** Chunkid */
+            chunkId: string;
+            /** Title */
+            title: string;
+            /** Snippet */
+            snippet?: string | null;
+        };
+        /** Conversation */
+        Conversation: {
+            /** Id */
+            id: string;
+            /** Workspaceid */
+            workspaceId: string;
+            /** Ownerid */
+            ownerId: string;
+            /** Title */
+            title: string | null;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /**
+             * Updatedat
+             * Format: date-time
+             */
+            updatedAt: string;
+        };
+        /** ConversationCreate */
+        ConversationCreate: {
+            /**
+             * Title
+             * @description 可选标题；空则首问后自动生成
+             */
+            title?: string | null;
+        };
+        /** ConversationDetail */
+        ConversationDetail: {
+            /** Id */
+            id: string;
+            /** Workspaceid */
+            workspaceId: string;
+            /** Ownerid */
+            ownerId: string;
+            /** Title */
+            title: string | null;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /**
+             * Updatedat
+             * Format: date-time
+             */
+            updatedAt: string;
+            /** Messages */
+            messages?: components["schemas"]["Message"][];
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
-        /** PlainTextSourceCreate */
-        PlainTextSourceCreate: {
+        /** LoginRequest */
+        LoginRequest: {
             /**
-             * Title
-             * @description 可选标题；未传时由服务端生成
+             * Phone
+             * @description 中国大陆手机号
              */
-            title?: string | null;
+            phone: string;
             /**
-             * Content
-             * @description 纯文字正文
+             * Password
+             * @description 登录密码
              */
-            content: string;
-            /** @description 可选；若传入必须为 plain_text */
-            type?: components["schemas"]["SourceType"] | null;
+            password: string;
         };
-        /** PlainTextSourceUpdate */
-        PlainTextSourceUpdate: {
+        /** Message */
+        Message: {
+            /** Id */
+            id: string;
+            /** Conversationid */
+            conversationId: string;
+            role: components["schemas"]["MessageRole"];
+            /** Content */
+            content: string;
+            /** Citations */
+            citations?: components["schemas"]["Citation"][];
             /**
-             * Title
-             * @description 标题
+             * Createdat
+             * Format: date-time
              */
-            title?: string | null;
+            createdAt: string;
+        };
+        /**
+         * MessageRole
+         * @description 会话消息角色。
+         * @enum {string}
+         */
+        MessageRole: "user" | "assistant" | "system";
+        /** ModelProfile */
+        ModelProfile: {
+            /** Id */
+            id: string;
+            /** Ownerid */
+            ownerId?: string | null;
+            /** Name */
+            name: string;
+            purpose: components["schemas"]["ModelPurpose"];
+            /** Baseurl */
+            baseUrl: string;
+            /** Modelname */
+            modelName: string;
+            /** Apikeymasked */
+            apiKeyMasked: string;
+            /** Issystemdefault */
+            isSystemDefault: boolean;
+            /** Createdat */
+            createdAt?: string | null;
+            /** Updatedat */
+            updatedAt?: string | null;
+        };
+        /** ModelProfileCreate */
+        ModelProfileCreate: {
+            /** Name */
+            name: string;
+            purpose: components["schemas"]["ModelPurpose"];
+            /** Baseurl */
+            baseUrl: string;
+            /** Modelname */
+            modelName: string;
+            /** Apikey */
+            apiKey: string;
+        };
+        /** ModelProfileUpdate */
+        ModelProfileUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Baseurl */
+            baseUrl?: string | null;
+            /** Modelname */
+            modelName?: string | null;
+            /** Apikey */
+            apiKey?: string | null;
+        };
+        /**
+         * ModelPurpose
+         * @description 模型配置档用途。
+         * @enum {string}
+         */
+        ModelPurpose: "chat" | "embedding";
+        /** RegisterRequest */
+        RegisterRequest: {
             /**
-             * Content
-             * @description 纯文字正文
+             * Phone
+             * @description 中国大陆手机号
              */
-            content?: string | null;
+            phone: string;
+            /**
+             * Password
+             * @description 登录密码
+             */
+            password: string;
         };
         /** Source */
         Source: {
@@ -155,6 +444,8 @@ export interface components {
             id: string;
             /** Workspaceid */
             workspaceId: string;
+            /** Ownerid */
+            ownerId: string;
             type: components["schemas"]["SourceType"];
             /** Title */
             title: string;
@@ -179,6 +470,30 @@ export interface components {
              * @description 列表预览截断文本
              */
             contentPreview: string;
+            /** Sourceurl */
+            sourceUrl?: string | null;
+            /** Errormessage */
+            errorMessage?: string | null;
+        };
+        /** SourceCreate */
+        SourceCreate: {
+            /** @description plain_text | markdown | web_page */
+            type: components["schemas"]["SourceType"];
+            /**
+             * Title
+             * @description 可选标题；未传时由服务端生成
+             */
+            title?: string | null;
+            /**
+             * Content
+             * @description 纯文字或 Markdown 正文
+             */
+            content?: string | null;
+            /**
+             * Url
+             * @description web_page 必填的 http(s) URL
+             */
+            url?: string | null;
         };
         /**
          * SourceListItem
@@ -189,6 +504,8 @@ export interface components {
             id: string;
             /** Workspaceid */
             workspaceId: string;
+            /** Ownerid */
+            ownerId: string;
             type: components["schemas"]["SourceType"];
             /** Title */
             title: string;
@@ -205,19 +522,63 @@ export interface components {
             updatedAt: string;
             /** Contentpreview */
             contentPreview: string;
+            /** Sourceurl */
+            sourceUrl?: string | null;
+            /** Errormessage */
+            errorMessage?: string | null;
         };
         /**
          * SourceStatus
-         * @description 来源处理状态。MVP 创建后直接为 ready。
+         * @description 来源处理状态。
          * @enum {string}
          */
-        SourceStatus: "ready" | "pending" | "processing" | "failed";
+        SourceStatus: "pending" | "processing" | "ready" | "failed";
         /**
          * SourceType
-         * @description 来源类型。创建接口仅允许 plain_text，其余为后续预留。
+         * @description 来源类型。创建仅允许初期落地集。
          * @enum {string}
          */
-        SourceType: "plain_text" | "web_page" | "video_url" | "image" | "image_url" | "markdown" | "pdf" | "word" | "excel" | "powerpoint";
+        SourceType: "plain_text" | "markdown" | "web_page" | "video_url" | "image" | "image_url" | "pdf" | "word" | "excel" | "powerpoint";
+        /** SourceUpdate */
+        SourceUpdate: {
+            /**
+             * Title
+             * @description 标题
+             */
+            title?: string | null;
+            /**
+             * Content
+             * @description 纯文字正文
+             */
+            content?: string | null;
+        };
+        /** TokenResponse */
+        TokenResponse: {
+            /** Accesstoken */
+            accessToken: string;
+            /**
+             * Tokentype
+             * @default bearer
+             */
+            tokenType: string;
+        };
+        /** UserPublic */
+        UserPublic: {
+            /** Id */
+            id: string;
+            /** Phone */
+            phone: string;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /**
+             * Updatedat
+             * Format: date-time
+             */
+            updatedAt: string;
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -235,6 +596,8 @@ export interface components {
         Workspace: {
             /** Id */
             id: string;
+            /** Ownerid */
+            ownerId: string;
             /** Name */
             name: string;
             /** Description */
@@ -314,6 +677,92 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    register_api_v1_auth_register_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    login_api_v1_auth_login_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    me_api_v1_auth_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserPublic"];
+                };
+            };
+        };
+    };
     list_workspaces_api_v1_workspaces_get: {
         parameters: {
             query?: never;
@@ -504,7 +953,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PlainTextSourceCreate"];
+                "application/json": components["schemas"]["SourceCreate"];
             };
         };
         responses: {
@@ -602,7 +1051,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PlainTextSourceUpdate"];
+                "application/json": components["schemas"]["SourceUpdate"];
             };
         };
         responses: {
@@ -626,9 +1075,290 @@ export interface operations {
             };
         };
     };
-    heartbeat_stream_api_v1_events_heartbeat_get: {
+    list_conversations_api_v1_workspaces__workspace_id__conversations_get: {
         parameters: {
             query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Conversation"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_conversation_api_v1_workspaces__workspace_id__conversations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConversationCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Conversation"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_conversation_api_v1_conversations__conversation_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_conversation_api_v1_conversations__conversation_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ask_message_api_v1_conversations__conversation_id__messages_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AskMessageRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AskMessageResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_model_profiles_api_v1_model_profiles_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelProfile"][];
+                };
+            };
+        };
+    };
+    create_model_profile_api_v1_model_profiles_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModelProfileCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelProfile"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_model_profile_api_v1_model_profiles__profile_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                profile_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_model_profile_api_v1_model_profiles__profile_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                profile_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModelProfileUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelProfile"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    heartbeat_stream_api_v1_events_heartbeat_get: {
+        parameters: {
+            query?: {
+                /** @description EventSource 无法设头时用查询参数传 JWT */
+                access_token?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -643,6 +1373,15 @@ export interface operations {
                 content: {
                     "application/json": unknown;
                     "text/event-stream": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
