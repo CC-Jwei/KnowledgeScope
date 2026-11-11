@@ -98,6 +98,14 @@ class Settings(BaseSettings):
     chat_history_message_limit: int = 10
     # 生成上限 token，用在聊天 API 调用
     chat_max_output_tokens: int = 2048
+    # 嵌入请求超时秒，用在 create_embeddings
+    embedding_request_timeout_seconds: float = 60.0
+    # 聊天请求超时秒，用在 create_chat_completion
+    chat_request_timeout_seconds: float = 120.0
+    # 上游模型调用最多尝试次数（含首次），用在 llm_client 重试
+    llm_max_attempts: int = 3
+    # 重试退避基数秒，用在两次尝试之间的等待
+    llm_retry_backoff_seconds: float = 1.0
     # 单条助手消息最多引用数，用在 ask 截断 Citation
     citation_max_count: int = 8
     # 会话标题最长，用在 Conversation 校验
