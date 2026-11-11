@@ -13,6 +13,7 @@ import type {
 } from '@knowledgescope/shared'
 import {
   ANSWER_MODE_STRICT,
+  MessageRoleValue,
   ModelPurposeValue,
   SourceStatusValue,
 } from '@knowledgescope/shared'
@@ -187,6 +188,8 @@ async function handleAsk(): Promise<void> {
     return
   }
 
+  // 本次提问所属会话 id，用在请求期间切换会话后更新正确消息列表
+  const conversationId = activeConversationId.value
   // 提问载荷，用在 askMessage
   const payload: AskMessageRequest = {
     content,
@@ -194,27 +197,43 @@ async function handleAsk(): Promise<void> {
     embeddingModelProfileId: selectedEmbeddingProfileId.value || null,
   }
 
+  // 本地用户消息，用在请求发出时立即上屏，返回后替换为服务端消息
+  const pendingMessage: Message = {
+    id: `pending-${crypto.randomUUID()}`,
+    conversationId,
+    role: MessageRoleValue.User,
+    content,
+    citations: [],
+    createdAt: new Date().toISOString(),
+  }
+
   asking.value = true
+  question.value = ''
+  if (detail.value?.id === conversationId) {
+    detail.value.messages = [...detail.value.messages, pendingMessage]
+    await scrollToBottom()
+  }
   try {
-    const response = await askMessage(activeConversationId.value, payload)
-    question.value = ''
-    if (detail.value) {
-      detail.value.messages = [
-        ...detail.value.messages,
-        response.userMessage,
-        response.assistantMessage,
-      ]
+    const response = await askMessage(conversationId, payload)
+    if (detail.value?.id === conversationId) {
+      // 去掉本次本地消息，避免与历史加载或服务端消息重复
+      const messages = detail.value.messages.filter((item) => item.id !== pendingMessage.id)
+      detail.value.messages = [...messages, response.userMessage, response.assistantMessage]
       if (!detail.value.title) {
         detail.value.title = response.userMessage.content.slice(0, 30)
       }
     }
     // 同步侧栏标题与更新时间
-    const conversation = conversations.value.find((item) => item.id === activeConversationId.value)
+    const conversation = conversations.value.find((item) => item.id === conversationId)
     if (conversation && !conversation.title) {
       conversation.title = response.userMessage.content.slice(0, 30)
     }
     await scrollToBottom()
   } catch (error) {
+    if (detail.value?.id === conversationId) {
+      detail.value.messages = detail.value.messages.filter((item) => item.id !== pendingMessage.id)
+    }
+    question.value = content
     ElMessage.error(getErrorMessage(error, '提问失败'))
   } finally {
     asking.value = false
